@@ -6,6 +6,7 @@
 #include <time.h>
 #include <string>
 #include <arpa/inet.h>
+#include <iomanip>
 #include "Packet.h"
 #include "MacAddress.h"
 #include "EthLayer.h"
@@ -25,13 +26,18 @@ private:
 
 
     // for frame
-    long startTimeStamp;
-    long currTimeStamp;
-    long prevTimeStamp;
+    time_t startTimeStamp;
+    time_t currTimeStamp;
+    time_t prevTimeStamp;
+    long startTimeStampNSec;
+    long currTimeStampNSec;
+    long prevTimeStampNSec;
     int packetNumber;
     std::string time_str;
-    long time_delta;
-    long time_relative;
+    time_t time_delta;
+    long time_deltaNSec;
+    time_t time_relative;
+    long time_relativeNSec;
     int frameLen;
     std::string protocols;
 
@@ -111,7 +117,24 @@ private:
     uint32_t tcp_seqNum;
     uint32_t tcp_ackNum;
     size_t tcp_segLen;
+    uint32_t tcp_nextSeq;
     uint16_t tcp_flags;
+    uint8_t tcp_flags_res;
+    uint8_t tcp_flags_ns;
+    uint8_t tcp_flags_cwr;
+    uint8_t tcp_flags_ecn;
+    uint8_t tcp_flags_urg;
+    uint8_t tcp_flags_ack;
+    uint8_t tcp_flags_push;
+    uint8_t tcp_flags_reset;
+    uint8_t tcp_flags_syn;
+    uint8_t tcp_flags_fin;
+    uint16_t tcp_windowSize;
+    uint16_t tcp_checksum;
+    uint16_t tcp_urgentPointer;
+    size_t tcp_dataSize;
+    uint8_t *tcp_payload;
+
     void parseTCP();
 
 public:
@@ -121,22 +144,34 @@ public:
         this->parse();
     }
 
-    Parser(int packetNumber, pcpp::Packet &packet, long startTimeStamp, long prevTimeStamp) {
+    Parser(int packetNumber, pcpp::Packet &packet, time_t startTimeStamp, time_t prevTimeStamp,
+           long startTimeStampNSec, long prevTimeStampNSec) {
         this->packetNumber = packetNumber;
         this->packet = packet;
         this->startTimeStamp = startTimeStamp;
         this->prevTimeStamp = prevTimeStamp;
+        this->startTimeStampNSec = startTimeStampNSec;
+        this->prevTimeStampNSec = prevTimeStampNSec;
         this->parse();
     }
 
-    long getStartTimeStamp() {
+    time_t getStartTimeStamp() {
         return this->startTimeStamp;
     }
 
-    long getCurrTimeStamp() {
+    time_t getCurrTimeStamp() {
         return this->currTimeStamp;
     }
 
+    long getStartTimeStampNSec() {
+        return this->startTimeStampNSec;
+    }
+
+    long getCurrTimeStampNSec() {
+        return this->currTimeStampNSec;
+    }
+
+    std::string info();
 };
 
 

@@ -17,4 +17,7 @@ target_link_libraries(PcapAnalysis
         Pcap++
         Packet++
         Common++
+        gflags
         )
+
+set_target_properties(PcapAnalysis PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})

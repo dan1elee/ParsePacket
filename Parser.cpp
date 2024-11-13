@@ -147,15 +147,27 @@ void Parser::parse() {
 
 // for frame
 void Parser::parseFrame() {
-    this->currTimeStamp = getFrameTimeStampNSec();
+    this->currTimeStamp = getFrameTimeStamp();
+    this->currTimeStampNSec = getFrameTimeStampNSec();
     if (packetNumber == 1) {
         this->startTimeStamp = this->currTimeStamp;
+        this->startTimeStampNSec = this->currTimeStampNSec;
         this->prevTimeStamp = this->currTimeStamp;
+        this->prevTimeStampNSec = this->currTimeStampNSec;
     }
-    printf("Number: %d\n", packetNumber);
     this->time_str = timeStampToString(this->getFrameTimeStamp());
     this->time_delta = this->currTimeStamp - this->prevTimeStamp;
+    this->time_deltaNSec = this->currTimeStampNSec - this->prevTimeStampNSec;
+    if (this->time_deltaNSec < (long) 0) {
+        this->time_delta -= 1;
+        this->time_deltaNSec += 1000000000;
+    }
     this->time_relative = this->currTimeStamp - this->startTimeStamp;
+    this->time_relativeNSec = this->currTimeStampNSec - this->startTimeStampNSec;
+    if (this->time_relativeNSec < (long) 0) {
+        this->time_relative -= 1;
+        this->time_relativeNSec += 1000000000;
+    }
     this->frameLen = this->getFrameLen();
     this->protocols = this->getFrameProtocols();
 }
@@ -281,7 +293,137 @@ void Parser::parseTCP() {
     this->tcp_seqNum = ntohl(tcpHeader->sequenceNumber);
     this->tcp_ackNum = ntohl(tcpHeader->ackNumber);
     this->tcp_segLen = this->tcpLayer->getDataLen() - this->tcp_headerLen;
+    this->tcp_nextSeq = this->tcp_seqNum + this->tcp_segLen;
     uint8_t *data = this->tcpLayer->getData();
     this->tcp_flags = ((uint16_t)((data[12] & 0xF) << 8)) | ((uint16_t) data[13]);
+    this->tcp_flags_res = (this->tcp_flags >> 9);
+    this->tcp_flags_ns = (this->tcp_flags >> 8) & 1;
+    this->tcp_flags_cwr = (this->tcp_flags >> 7) & 1;
+    this->tcp_flags_ecn = (this->tcp_flags >> 6) & 1;
+    this->tcp_flags_urg = (this->tcp_flags >> 5) & 1;
+    this->tcp_flags_ack = (this->tcp_flags >> 4) & 1;
+    this->tcp_flags_push = (this->tcp_flags >> 3) & 1;
+    this->tcp_flags_reset = (this->tcp_flags >> 2) & 1;
+    this->tcp_flags_syn = (this->tcp_flags >> 1) & 1;
+    this->tcp_flags_fin = this->tcp_flags & 1;
+    this->tcp_windowSize = ntohs(tcpHeader->windowSize);
+//    pcpp::TcpOption windowScaleOption = tcpLayer->getTcpOption(pcpp::TcpOptionEnumType::Window);
+//    uint8_t scaleFactor = windowScaleOption.getValueAs<uint8_t>();
+//    printf("0x%X\n", scaleFactor);
+    this->tcp_checksum = ntohs(tcpHeader->headerChecksum);
+    this->tcp_urgentPointer = ntohs(tcpHeader->urgentPointer);
+    this->tcp_dataSize = this->tcpLayer->getDataLen() - this->tcp_headerLen;
+    this->tcp_payload = (uint8_t *) malloc(this->tcp_dataSize);
+    memcpy(this->tcp_payload, this->tcpLayer->getData() + this->tcp_headerLen, this->tcp_dataSize);
+
     //TODO
+}
+
+std::string Parser::info() {
+    std::stringstream ss;
+
+    // frame
+    ss << time_str;
+    ss << "," << currTimeStamp << "." << std::setw(9) << std::setfill('0') << currTimeStampNSec;
+    ss << "," << time_delta << "." << std::setw(9) << std::setfill('0') << time_deltaNSec;
+    ss << "," << time_relative << "." << std::setw(9) << std::setfill('0') << time_relativeNSec;
+    ss << std::dec;
+    ss << "," << packetNumber;
+    ss << "," << frameLen;
+    ss << "," << protocols;
+    //eth
+    if (ethLayer != nullptr) {
+        ss << "," << dstMac.toString();
+        ss << "," << srcMac.toString();
+        ss << "," << std::hex << "0x" << ethType;
+        ss << std::dec;
+    } else {
+        ss << ",,,";
+    }
+    //ipv4
+    if (!isV6 && ip4_ipLayer != nullptr) {
+        ss << std::dec;
+        ss << "," << static_cast<int>(ip_version);
+        ss << "," << ip_headerLen;
+        ss << std::hex;
+        ss << "," << "0x" << static_cast<int>(ip4_dsfield);
+        ss << std::dec;
+        ss << "," << static_cast<int>(ip4_dscp);
+        ss << "," << static_cast<int>(ip4_ecn);
+        ss << "," << ip4_len;
+        ss << std::hex;
+        ss << "," << "0x" << std::setw(4) << std::setfill('0') << ip4_id;
+        ss << "," << "0x" << std::setw(4) << std::setfill('0') << ip4_flags;
+        ss << std::dec;
+        ss << "," << ip4_flags_rb;
+        ss << "," << ip4_flags_df;
+        ss << "," << ip4_flags_mf;
+        ss << "," << ip4_offset;
+        ss << "," << static_cast<int>(ip4_ttl);
+        ss << "," << static_cast<int>(ip4_protocol);
+        ss << "," << ip4_checksum;
+        ss << "," << ip4_srcIp.toString();
+        ss << "," << ip4_dstIp.toString();
+    } else {
+        ss << ",,,,,,,,,,,,,,,,,";
+    }
+    //ipv6
+    if (isV6 && ip6_ipLayer != nullptr) {
+        ss << "," << static_cast<int>(ip_version);
+        ss << "," << ip_headerLen;
+        ss << std::hex;
+        ss << "," << "0x" << std::setw(2) << std::setfill('0') << static_cast<int>(ip6_trafficClass);
+        ss << "," << "0x" << static_cast<int>(ip6_flowLabel[0])
+           << std::setw(2) << std::setfill('0') << static_cast<int>(ip6_flowLabel[1])
+           << std::setw(2) << std::setfill('0') << static_cast<int>(ip6_flowLabel[2]);
+        ss << std::dec;
+        ss << "," << ip6_payloadLength;
+        ss << "," << static_cast<int>(ip6_nextHeader);
+        ss << "," << static_cast<int>(ip6_hopLimit);
+        ss << "," << ip6_srcIp.toString();
+        ss << "," << ip6_dstIp.toString();
+    } else {
+        ss << ",,,,,,,,,";
+    }
+    // tcp
+    if (tcpLayer != nullptr) {
+        ss << std::dec;
+        ss << "," << tcp_srcPort;
+        ss << "," << tcp_dstPort;
+        ss << "," << tcp_segLen;
+        ss << "," << tcp_seqNum;
+        ss << "," << tcp_nextSeq;
+        ss << "," << tcp_ackNum;
+        ss << "," << tcp_headerLen;
+        ss << std::hex;
+        ss << "," << "0x" << std::setw(3) << std::setfill('0') << tcp_flags;
+        ss << std::dec;
+        ss << "," << static_cast<int>(tcp_flags_res);
+        ss << "," << static_cast<int>(tcp_flags_ns);
+        ss << "," << static_cast<int>(tcp_flags_cwr);
+        ss << "," << static_cast<int>(tcp_flags_ecn);
+        ss << "," << static_cast<int>(tcp_flags_urg);
+        ss << "," << static_cast<int>(tcp_flags_ack);
+        ss << "," << static_cast<int>(tcp_flags_push);
+        ss << "," << static_cast<int>(tcp_flags_reset);
+        ss << "," << static_cast<int>(tcp_flags_syn);
+        ss << "," << static_cast<int>(tcp_flags_fin);
+        ss << "," << tcp_windowSize;
+        ss << std::hex;
+        ss << "," << "0x" << std::setw(4) << std::setfill('0') << tcp_checksum;
+        ss << std::dec;
+        ss << "," << tcp_urgentPointer;
+        ss << ",";
+        if (tcp_dataSize > 0) {
+            ss << std::hex;
+            for (int i = 0; i < tcp_dataSize; i++) {
+                if (i != 0)
+                    ss << ":";
+                ss << std::setw(2) << std::setfill('0') << static_cast<int>(tcp_payload[i]);
+            }
+        }
+    } else {
+        ss << ",,,,,,,,,,,,,,,,,,,,,,";
+    }
+    return ss.str();
 }
