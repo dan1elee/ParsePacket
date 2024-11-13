@@ -131,17 +131,26 @@ void Parser::parse() {
     switch (this->ethType) {
         case 0x0800:
             this->isV6 = false;
-            parseIPv4();
+            this->parseIPv4();
             break;
         case 0x86DD:
             this->isV6 = true;
-            parseIPv6();
+            this->parseIPv6();
             break;
         default:
 //            std::cout << "Unknown ethernet type: " << this->ethType << std::endl;
             break;
     }
-    this->parseTCP();
+    switch (this->ip_protocol) {
+        case 6:
+            this->parseTCP();
+            break;
+        case 17:
+            this->parseUDP();
+            break;
+        default:
+            break;
+    }
 }
 
 
@@ -254,7 +263,7 @@ void Parser::parseIPv4() {
     this->ip4_flags_df = (this->ip4_flags >> 14) & 1;
     this->ip4_flags_mf = (this->ip4_flags >> 13) & 1;
     this->ip4_offset = this->ip4_flags & 0x1FFF;
-    this->ip4_protocol = ip4_ipHeader->protocol;
+    this->ip_protocol = ip4_ipHeader->protocol;
     this->ip4_checksum = ntohs(ip4_ipHeader->headerChecksum);
     this->ip4_srcIp = this->ip4_ipLayer->getSrcIPv4Address();
     this->ip4_dstIp = this->ip4_ipLayer->getDstIPv4Address();
@@ -273,7 +282,7 @@ void Parser::parseIPv6() {
     this->ip6_trafficClass = ip6_ipHeader->trafficClass;
     memcpy(this->ip6_flowLabel, ip6_ipHeader->flowLabel, 3 * sizeof(uint8_t));
     this->ip6_payloadLength = ntohs(ip6_ipHeader->payloadLength);
-    this->ip6_nextHeader = ip6_ipHeader->nextHeader;
+    this->ip_protocol = ip6_ipHeader->nextHeader;
     this->ip6_hopLimit = ip6_ipHeader->hopLimit;
     this->ip6_srcIp = this->ip6_ipLayer->getSrcIPv6Address();
     this->ip6_dstIp = this->ip6_ipLayer->getDstIPv6Address();
@@ -307,16 +316,27 @@ void Parser::parseTCP() {
     this->tcp_flags_syn = (this->tcp_flags >> 1) & 1;
     this->tcp_flags_fin = this->tcp_flags & 1;
     this->tcp_windowSize = ntohs(tcpHeader->windowSize);
-//    pcpp::TcpOption windowScaleOption = tcpLayer->getTcpOption(pcpp::TcpOptionEnumType::Window);
-//    uint8_t scaleFactor = windowScaleOption.getValueAs<uint8_t>();
-//    printf("0x%X\n", scaleFactor);
     this->tcp_checksum = ntohs(tcpHeader->headerChecksum);
     this->tcp_urgentPointer = ntohs(tcpHeader->urgentPointer);
     this->tcp_dataSize = this->tcpLayer->getDataLen() - this->tcp_headerLen;
     this->tcp_payload = (uint8_t *) malloc(this->tcp_dataSize);
     memcpy(this->tcp_payload, this->tcpLayer->getData() + this->tcp_headerLen, this->tcp_dataSize);
 
-    //TODO
+}
+
+void Parser::parseUDP() {
+    this->udpLayer = packet.getLayerOfType<pcpp::UdpLayer>();
+    if (this->tcpLayer == nullptr) {
+        return;
+    }
+    pcpp::udphdr *udpHeader = this->udpLayer->getUdpHeader();
+    this->udp_srcPort = this->udpLayer->getSrcPort();
+    this->udp_dstPort = this->udpLayer->getDstPort();
+    size_t udp_headerLen = this->udpLayer->getHeaderLen();
+    this->udp_dataSize = this->udpLayer->getDataLen() - udp_headerLen;
+    this->udp_checksum = ntohs(udpHeader->headerChecksum);
+    this->udp_payload = (uint8_t *) malloc(this->udp_dataSize);
+    memcpy(this->udp_payload, this->udpLayer->getData() + udp_headerLen, this->udp_dataSize);
 }
 
 std::string Parser::info() {
@@ -360,7 +380,7 @@ std::string Parser::info() {
         ss << "," << ip4_flags_mf;
         ss << "," << ip4_offset;
         ss << "," << static_cast<int>(ip4_ttl);
-        ss << "," << static_cast<int>(ip4_protocol);
+        ss << "," << static_cast<int>(ip_protocol);
         ss << "," << ip4_checksum;
         ss << "," << ip4_srcIp.toString();
         ss << "," << ip4_dstIp.toString();
@@ -378,7 +398,7 @@ std::string Parser::info() {
            << std::setw(2) << std::setfill('0') << static_cast<int>(ip6_flowLabel[2]);
         ss << std::dec;
         ss << "," << ip6_payloadLength;
-        ss << "," << static_cast<int>(ip6_nextHeader);
+        ss << "," << static_cast<int>(ip_protocol);
         ss << "," << static_cast<int>(ip6_hopLimit);
         ss << "," << ip6_srcIp.toString();
         ss << "," << ip6_dstIp.toString();
@@ -386,7 +406,7 @@ std::string Parser::info() {
         ss << ",,,,,,,,,";
     }
     // tcp
-    if (tcpLayer != nullptr) {
+    if (ip_protocol == 6) {
         ss << std::dec;
         ss << "," << tcp_srcPort;
         ss << "," << tcp_dstPort;
@@ -424,6 +444,25 @@ std::string Parser::info() {
         }
     } else {
         ss << ",,,,,,,,,,,,,,,,,,,,,,";
+    }
+    if (ip_protocol == 17) {
+        ss << std::dec;
+        ss << "," << udp_srcPort;
+        ss << "," << udp_dstPort;
+        ss << "," << udp_length;
+        ss << std::hex;
+        ss << "," << "0x" << std::setw(4) << std::setfill('0') << udp_checksum;
+        ss << ",";
+        if (udp_dataSize > 0) {
+            ss << std::hex;
+            for (int i = 0; i < udp_dataSize; i++) {
+                if (i != 0)
+                    ss << ":";
+                ss << std::setw(2) << std::setfill('0') << static_cast<int>(udp_payload[i]);
+            }
+        }
+    } else {
+        ss << ",,,,,";
     }
     return ss.str();
 }

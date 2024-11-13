@@ -13,6 +13,7 @@
 #include "IPv4Layer.h"
 #include "IPv6Layer.h"
 #include "TcpLayer.h"
+#include "UdpLayer.h"
 
 
 std::string getProtocolTypeAsString(pcpp::ProtocolType protocolType);
@@ -74,6 +75,7 @@ private:
     bool isV6;
     uint8_t ip_version;
     size_t ip_headerLen;
+    uint8_t ip_protocol;
 
     // for IPv4
     pcpp::IPv4Layer *ip4_ipLayer;
@@ -88,7 +90,6 @@ private:
     bool ip4_flags_df;
     bool ip4_flags_mf;
     uint16_t ip4_offset;
-    uint8_t ip4_protocol;
     uint16_t ip4_checksum;
     pcpp::IPv4Address ip4_srcIp;
     pcpp::IPv4Address ip4_dstIp;
@@ -101,7 +102,6 @@ private:
     uint8_t ip6_trafficClass;
     uint8_t ip6_flowLabel[3];
     uint16_t ip6_payloadLength;
-    uint8_t ip6_nextHeader;
     uint8_t ip6_hopLimit;
     pcpp::IPv6Address ip6_srcIp;
     pcpp::IPv6Address ip6_dstIp;
@@ -136,6 +136,18 @@ private:
     uint8_t *tcp_payload;
 
     void parseTCP();
+
+
+    //for UDP
+    pcpp::UdpLayer *udpLayer;
+    uint16_t udp_srcPort;
+    uint16_t udp_dstPort;
+    uint16_t udp_length;
+    size_t udp_dataSize;
+    uint16_t udp_checksum;
+    uint8_t *udp_payload;
+
+    void parseUDP();
 
 public:
     Parser(int packetNumber, pcpp::Packet &packet) {

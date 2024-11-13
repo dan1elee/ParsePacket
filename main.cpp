@@ -33,7 +33,8 @@ void analyzePcapFile(const std::string &filePath) {
                "tcp.srcport,tcp.dstport,tcp.len,tcp.seq,tcp.nxtseq,tcp.ack,tcp.hdr_len,"
                "tcp.flags,tcp.flags.res,tcp.flags.ns,tcp.flags.cwr,tcp.flags.ecn,tcp.flags.urg,tcp.flags.ack,"
                "tcp.flags.push,tcp.flags.reset,tcp.flags.syn,tcp.flags.fin,"
-               "tcp.window_size,tcp.checksum,tcp.urgent_pointer,tcp.payload"
+               "tcp.window_size,tcp.checksum,tcp.urgent_pointer,tcp.payload,"
+               "udp.srcport,udp.dstport,udp.length,udp.checksum,udp.payload"
             << std::endl;
     while (reader.getNextPacket(rawPacket)) {
         pcpp::Packet parsedPacket(&rawPacket);
