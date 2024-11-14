@@ -5,3 +5,6 @@ PcapPlusPlus/
 *.log
 PcapAnalysis
 *.csv
+pcap/
+.vscode/
+output/
