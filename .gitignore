@@ -6,3 +6,4 @@ PcapPlusPlus/
 PcapAnalysis
 *.csv
 pcap/
+.vscode/

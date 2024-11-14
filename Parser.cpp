@@ -325,7 +325,7 @@ void Parser::parseTCP() {
 
 void Parser::parseUDP() {
     this->udpLayer = packet.getLayerOfType<pcpp::UdpLayer>();
-    if (this->tcpLayer == nullptr) {
+    if (this->udpLayer == nullptr) {
         return;
     }
     pcpp::udphdr *udpHeader = this->udpLayer->getUdpHeader();
