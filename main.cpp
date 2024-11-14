@@ -9,9 +9,7 @@
 #include <vector>
 #include <mutex>
 #include <iostream>
-#include <fstream>
-#include <fcntl.h>
-#include <unistd.h>
+#include <cstdio>
 #include <gflags/gflags.h>
 
 DEFINE_string(filepath,
@@ -38,7 +36,7 @@ void parsePacket(pcpp::Packet *packet, int packetNumber, int threadNum) {
 }
 
 // 主函数
-void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, int fd) {
+void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, FILE* fd) {
     pcpp::PcapFileReaderDevice reader(filePath);
     if (!reader.open()) {
         std::cerr << "无法打开PCAP文件：" << filePath << std::endl;
@@ -72,8 +70,8 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, int 
                  "tcp.window_size,tcp.checksum,tcp.urgent_pointer,tcp.payload,"
                  "udp.srcport,udp.dstport,udp.length,udp.checksum,udp.payload";
     }
-    write(fd,header.c_str(), header.length());
-    write(fd,"\n",1);
+    fwrite(header.c_str(), header.length(),1,fd);
+    fwrite("\n",1,1,fd);
     if (!parallel){
         while (reader.getNextPacket(rawPacket)) {
             pcpp::Packet *parsedPacket = new pcpp::Packet(&rawPacket);
@@ -91,8 +89,8 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, int 
                 std::string info = parser.getInfo();
                 const char *info_c = info.c_str();
                 int len = info.length();
-                write(fd,info_c, len);
-                write(fd,"\n",1);
+                fwrite(info_c, len, 1, fd);
+                fwrite("\n",1, 1, fd);
             } else {
                 Parser parser(packetNumber, copiedPacket, startTimestamp, prevTimestamp,
                               startTimeStampNSec, prevTimeStampNSec, parallel);
@@ -102,8 +100,8 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, int 
                  std::string info = parser.getInfo();
                 const char *info_c = info.c_str();
                 int len = info.length();
-                write(fd,info_c, len);
-                write(fd,"\n",1);
+                fwrite(info_c, len,1,fd);
+                fwrite("\n",1,1,fd);
             }
             delete copiedPacket;
             delete parsedPacket;
@@ -127,8 +125,8 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, int 
                 for (int i = 0; i < thnum; i++){
                     if (results[i] != nullptr) {
                         // output << results[i] << std::endl;
-                        write(fd,results[i], strlen(results[i]));
-                        write(fd,"\n",1);
+                        fwrite(results[i], strlen(results[i]),1,fd);
+                        fwrite("\n",1,1,fd);
                         delete(results[i]);
                         results[i] = nullptr;
                     }
@@ -142,8 +140,8 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, int 
         for (int i = 0; i < thnum; i++){
             if (results[i] != nullptr) {
                 // output << results[i] << std::endl;
-                write(fd,results[i], strlen(results[i]));
-                write(fd,"\n",1);
+                fwrite(results[i], strlen(results[i]),1,fd);
+                fwrite("\n",1,1,fd);
                 delete(results[i]);
                 results[i] = nullptr;
             }
@@ -154,7 +152,7 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, int 
 
 int main(int argc, char *argv[]) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
-    int fd = open(FLAGS_outputfile.c_str(), O_WRONLY|O_TRUNC|O_CREAT, 0777);  
+    FILE* fd = fopen(FLAGS_outputfile.c_str(), "w");  
     analyzePcapFile(FLAGS_filepath, FLAGS_parallel, FLAGS_thnum, fd);
     return 0;
 }
