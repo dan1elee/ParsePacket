@@ -188,24 +188,24 @@ std::string Parser::timeStampToString(time_t timeStamp) {
 }
 
 int Parser::getFrameLen() {
-    return this->packet.getRawPacket()->getRawDataLen();
+    return this->packet->getRawPacket()->getRawDataLen();
 }
 
 time_t Parser::getFrameTimeStamp() {
-    timespec ts = this->packet.getRawPacket()->getPacketTimeStamp();
+    timespec ts = this->packet->getRawPacket()->getPacketTimeStamp();
     time_t timestamp = ts.tv_sec;
     return timestamp;
 }
 
 long Parser::getFrameTimeStampNSec() {
-    timespec ts = this->packet.getRawPacket()->getPacketTimeStamp();
+    timespec ts = this->packet->getRawPacket()->getPacketTimeStamp();
     long timestamp = ts.tv_nsec;
     return timestamp;
 }
 
 std::string Parser::getFrameProtocols() {
     std::stringstream ss;
-    pcpp::Layer *layer = packet.getFirstLayer();
+    pcpp::Layer *layer = packet->getFirstLayer();
     while (true) {
         ss << getProtocolTypeAsString(layer->getProtocol());
         layer = layer->getNextLayer();
@@ -219,7 +219,7 @@ std::string Parser::getFrameProtocols() {
 
 //for eth
 void Parser::parseEth() {
-    this->ethLayer = this->packet.getLayerOfType<pcpp::EthLayer>();
+    this->ethLayer = this->packet->getLayerOfType<pcpp::EthLayer>();
     if (this->ethLayer == nullptr) {
         return;
     }
@@ -244,7 +244,7 @@ uint16_t Parser::getEthType() {
 
 // for IPv4
 void Parser::parseIPv4() {
-    this->ip4_ipLayer = packet.getLayerOfType<pcpp::IPv4Layer>();
+    this->ip4_ipLayer = packet->getLayerOfType<pcpp::IPv4Layer>();
     if (this->ip4_ipLayer == nullptr) {
         return;
     }
@@ -271,7 +271,7 @@ void Parser::parseIPv4() {
 
 // for IPv6
 void Parser::parseIPv6() {
-    this->ip6_ipLayer = packet.getLayerOfType<pcpp::IPv6Layer>();
+    this->ip6_ipLayer = packet->getLayerOfType<pcpp::IPv6Layer>();
     if (this->ip6_ipLayer == nullptr) {
         return;
     }
@@ -290,7 +290,7 @@ void Parser::parseIPv6() {
 
 // for TCP
 void Parser::parseTCP() {
-    this->tcpLayer = packet.getLayerOfType<pcpp::TcpLayer>();
+    this->tcpLayer = packet->getLayerOfType<pcpp::TcpLayer>();
     if (this->tcpLayer == nullptr) {
         return;
     }
@@ -324,7 +324,7 @@ void Parser::parseTCP() {
 }
 
 void Parser::parseUDP() {
-    this->udpLayer = packet.getLayerOfType<pcpp::UdpLayer>();
+    this->udpLayer = packet->getLayerOfType<pcpp::UdpLayer>();
     if (this->udpLayer == nullptr) {
         return;
     }
@@ -338,14 +338,16 @@ void Parser::parseUDP() {
     memcpy(this->udp_payload, this->udpLayer->getData() + udp_headerLen, this->udp_dataSize);
 }
 
-std::string Parser::info() {
+void Parser::genInfo() {
     std::stringstream ss;
 
     // frame
     ss << time_str;
     ss << "," << currTimeStamp << "." << std::setw(9) << std::setfill('0') << currTimeStampNSec;
-    ss << "," << time_delta << "." << std::setw(9) << std::setfill('0') << time_deltaNSec;
-    ss << "," << time_relative << "." << std::setw(9) << std::setfill('0') << time_relativeNSec;
+    if (!parallel) {
+        ss << "," << time_delta << "." << std::setw(9) << std::setfill('0') << time_deltaNSec;
+        ss << "," << time_relative << "." << std::setw(9) << std::setfill('0') << time_relativeNSec;
+    }
     ss << std::dec;
     ss << "," << packetNumber;
     ss << "," << frameLen;
@@ -463,5 +465,9 @@ std::string Parser::info() {
     } else {
         ss << ",,,,,";
     }
-    return ss.str();
+    this->info = ss.str();
+}
+
+std::string Parser::getInfo() {
+    return this->info;
 }

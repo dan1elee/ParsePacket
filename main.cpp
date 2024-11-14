@@ -21,13 +21,14 @@ false, "parallel");
 std::mutex mtx;
 char **results;
 
-void parsePacket(pcpp::Packet &packet, int packetNumber, int threadNum) {
+void parsePacket(pcpp::Packet *packet, int packetNumber, int threadNum) {
     Parser parser(packetNumber, packet, true);
     mtx.lock();
-    const char *res = parser.info().c_str();
-    int len = strlen(res);
-    results[threadNum] = (char *) malloc(sizeof(char) * (len + 1));
-    std::memcpy(results[threadNum], res, len + 1);
+    int len = parser.getInfoLen();
+    char *s = (char *) calloc(len + 1, sizeof(char *));
+    strncpy(s, parser.getInfo().c_str(), len);
+    s[len] = '\0';
+    results[(packetNumber - 1) % threadNum] = s;
     mtx.unlock();
 }
 
@@ -67,10 +68,10 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum) {
                  "udp.srcport,udp.dstport,udp.length,udp.checksum,udp.payload";
     }
     std::cout << header << std::endl;
-    while (reader.getNextPacket(rawPacket)) {
-        pcpp::Packet parsedPacket(&rawPacket);
-        packetNumber++;
-        if (!parallel) {
+    if (!parallel){
+        while (reader.getNextPacket(rawPacket)) {
+            pcpp::Packet *parsedPacket = new pcpp::Packet(&rawPacket);
+            packetNumber++;
             if (packetNumber == 1) {
                 Parser parser(packetNumber, parsedPacket, parallel);
                 startTimestamp = parser.getStartTimeStamp();
@@ -78,41 +79,46 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum) {
 
                 prevTimestamp = parser.getCurrTimeStamp();
                 prevTimeStampNSec = parser.getCurrTimeStampNSec();
-                std::cout << parser.info() << std::endl;
+                std::cout << parser.getInfo() << std::endl;
             } else {
                 Parser parser(packetNumber, parsedPacket, startTimestamp, prevTimestamp,
                               startTimeStampNSec, prevTimeStampNSec, parallel);
                 prevTimestamp = parser.getCurrTimeStamp();
                 prevTimeStampNSec = parser.getCurrTimeStampNSec();
-                std::cout << parser.info() << std::endl;
-            }
-        } else {
-            results = (char **) calloc(thnum, sizeof(char *));
-            std::vector <std::thread> threads;
-            while (reader.getNextPacket(rawPacket)) {
-                pcpp::Packet parsedPacket(&rawPacket);
-                packetNumber++;
-                threads.push_back(std::thread([&parsedPacket, packetNumber, thnum]() {
-                    parsePacket(parsedPacket, packetNumber, packetNumber % thnum);
-                }));
-                if (threads.size() >= thnum) {
-                    for (auto &t: threads) {
-                        t.join();
-                    }
-                    for (int i = 0; i < threads.size(); i++) {
-                        std::cout << results[i] << std::endl;
-                    }
-                    threads.clear();
-                }
-            }
-            for (auto &t: threads) {
-                t.join();
-            }
-            for (int i = 0; i < threads.size(); i++) {
-                std::cout << results[i] << std::endl;
+                std::cout << parser.getInfo() << std::endl;
             }
         }
-
+    } else {
+        results = (char **) calloc(thnum, sizeof(char *));
+        std::vector <std::thread> threads;
+        while (reader.getNextPacket(rawPacket)) {
+            pcpp::Packet *parsedPacket = new pcpp::Packet(&rawPacket);
+            packetNumber++;
+            threads.push_back(std::thread([parsedPacket, packetNumber, thnum]() {
+                parsePacket(parsedPacket, packetNumber, thnum);
+            }));
+            if (threads.size() >= thnum) {
+                for (auto &t: threads) {
+                    t.join();
+                }
+                for (int i = 0; i < thnum; i++){
+                    if (results[i] != nullptr) {
+                        std::cout << results[i] << std::endl;
+                        delete(results[i]);
+                    }
+                }
+                threads.clear();
+            }  
+        }
+        for (auto &t: threads) {
+            t.join();
+        }
+        for (int i = 0; i < thnum; i++){
+            if (results[i] != nullptr) {
+                std::cout << results[i] << std::endl;
+                delete(results[i]);
+            }
+        }
     }
     reader.close();
 }
