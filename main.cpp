@@ -71,9 +71,11 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum) {
     if (!parallel){
         while (reader.getNextPacket(rawPacket)) {
             pcpp::Packet *parsedPacket = new pcpp::Packet(&rawPacket);
+            pcpp::Packet *copiedPacket = new pcpp::Packet(*parsedPacket); // 复制一份就能避免PacketTrailer了？？？
+
             packetNumber++;
             if (packetNumber == 1) {
-                Parser parser(packetNumber, parsedPacket, parallel);
+                Parser parser(packetNumber, copiedPacket, parallel);
                 startTimestamp = parser.getStartTimeStamp();
                 startTimeStampNSec = parser.getStartTimeStampNSec();
 
@@ -81,12 +83,14 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum) {
                 prevTimeStampNSec = parser.getCurrTimeStampNSec();
                 std::cout << parser.getInfo() << std::endl;
             } else {
-                Parser parser(packetNumber, parsedPacket, startTimestamp, prevTimestamp,
+                Parser parser(packetNumber, copiedPacket, startTimestamp, prevTimestamp,
                               startTimeStampNSec, prevTimeStampNSec, parallel);
                 prevTimestamp = parser.getCurrTimeStamp();
                 prevTimeStampNSec = parser.getCurrTimeStampNSec();
                 std::cout << parser.getInfo() << std::endl;
             }
+            delete copiedPacket;
+            delete parsedPacket;
         }
     } else {
         results = (char **) calloc(thnum, sizeof(char *));
@@ -94,9 +98,12 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum) {
         while (reader.getNextPacket(rawPacket)) {
             pcpp::Packet *parsedPacket = new pcpp::Packet(&rawPacket);
             packetNumber++;
-            threads.push_back(std::thread([parsedPacket, packetNumber, thnum]() {
-                parsePacket(parsedPacket, packetNumber, thnum);
+            pcpp::Packet *copiedPacket = new pcpp::Packet(*parsedPacket);
+            threads.push_back(std::thread([copiedPacket, packetNumber, thnum]() {
+                parsePacket(copiedPacket, packetNumber, thnum);
+                delete copiedPacket;
             }));
+            delete parsedPacket;
             if (threads.size() >= thnum) {
                 for (auto &t: threads) {
                     t.join();
@@ -105,6 +112,7 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum) {
                     if (results[i] != nullptr) {
                         std::cout << results[i] << std::endl;
                         delete(results[i]);
+                        results[i] = nullptr;
                     }
                 }
                 threads.clear();
@@ -117,6 +125,7 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum) {
             if (results[i] != nullptr) {
                 std::cout << results[i] << std::endl;
                 delete(results[i]);
+                results[i] = nullptr;
             }
         }
     }
