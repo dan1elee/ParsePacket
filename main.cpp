@@ -50,7 +50,8 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
     long startTimeStampNSec = 0;
     std::string header = "frame.time,frame.timestamp,frame.time_delta,frame.time_relative,frame.number,frame.len,frame.protocols,"
                          "eth.dst,eth.src,eth.type,"
-                         "ip.version,ip.hdr_len,ip.dsfield,ip.dsfield.dscp,ip.dsfield.ecn,ip.len,ip.id,"
+                         "ip.version,ip.hdr_len,ip_protocol,"
+                         "ip.dsfield,ip.dsfield.dscp,ip.dsfield.ecn,ip.len,ip.id,"
                          "ip.flags,ip.flags.rb,ip.flags.df,ip.flags.mf,ip.frag_offset,ip.ttl,ip.proto,ip.checksum,ip.src,ip.dst,"
                          "ip6.version,ip6.hdr_len,ip6.trafficclass,ip6.flowlabel,ip6.payloadlen,ip6.nextHeader,ip6.ip6_hopLimit,ip6.src,ip6.dst,"
                          "tcp.srcport,tcp.dstport,tcp.len,tcp.seq,tcp.nxtseq,tcp.ack,tcp.hdr_len,"
