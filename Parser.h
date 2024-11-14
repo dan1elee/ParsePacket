@@ -22,6 +22,7 @@ std::string getProtocolTypeAsString(pcpp::ProtocolType protocolType);
 class Parser {
 private:
     pcpp::Packet packet;
+    bool parallel;
 
     void parse();
 
@@ -150,20 +151,22 @@ private:
     void parseUDP();
 
 public:
-    Parser(int packetNumber, pcpp::Packet &packet) {
+    Parser(int packetNumber, pcpp::Packet &packet, bool parallel = false) {
         this->packetNumber = packetNumber;
         this->packet = packet;
+        this->parallel = parallel;
         this->parse();
     }
 
     Parser(int packetNumber, pcpp::Packet &packet, time_t startTimeStamp, time_t prevTimeStamp,
-           long startTimeStampNSec, long prevTimeStampNSec) {
+           long startTimeStampNSec, long prevTimeStampNSec, bool parallel = false) {
         this->packetNumber = packetNumber;
         this->packet = packet;
         this->startTimeStamp = startTimeStamp;
         this->prevTimeStamp = prevTimeStamp;
         this->startTimeStampNSec = startTimeStampNSec;
         this->prevTimeStampNSec = prevTimeStampNSec;
+        this->parallel = parallel;
         this->parse();
     }
 
