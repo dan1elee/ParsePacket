@@ -361,12 +361,18 @@ void Parser::genInfo() {
     } else {
         ss << ",,,";
     }
-    //ipv4
-    if (!isV6 && ip4_ipLayer != nullptr) {
+
+    if ((!isV6 && ip4_ipLayer != nullptr) || (isV6 && ip6_ipLayer != nullptr)) {
         ss << std::dec;
         ss << "," << static_cast<int>(ip_version);
         ss << "," << ip_headerLen;
-        ss << "," << ip_protocol;
+        ss << "," << static_cast<int>(ip_protocol);;
+    } else {
+        ss << ",,,";
+    }
+
+    //ipv4
+    if (!isV6 && ip4_ipLayer != nullptr) {
         ss << std::hex;
         ss << "," << "0x" << static_cast<int>(ip4_dsfield);
         ss << std::dec;
@@ -387,13 +393,10 @@ void Parser::genInfo() {
         ss << "," << ip4_srcIp.toString();
         ss << "," << ip4_dstIp.toString();
     } else {
-        ss << ",,,,,,,,,,,,,,,,,,";
+        ss << ",,,,,,,,,,,,,,,";
     }
     //ipv6
     if (isV6 && ip6_ipLayer != nullptr) {
-        ss << "," << static_cast<int>(ip_version);
-        ss << "," << ip_headerLen;
-        ss << "," << static_cast<int>(ip_protocol);
         ss << std::hex;
         ss << "," << "0x" << std::setw(2) << std::setfill('0') << static_cast<int>(ip6_trafficClass);
         ss << "," << "0x" << static_cast<int>(ip6_flowLabel[0])
@@ -406,7 +409,7 @@ void Parser::genInfo() {
         ss << "," << ip6_srcIp.toString();
         ss << "," << ip6_dstIp.toString();
     } else {
-        ss << ",,,,,,,,,,";
+        ss << ",,,,,,,,,";
     }
     // tcp
     if (ip_protocol == 6) {
