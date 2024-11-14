@@ -9,10 +9,13 @@
 #include <vector>
 #include <mutex>
 #include <iostream>
+#include <fstream>
 #include <gflags/gflags.h>
 
 DEFINE_string(filepath,
 "./pcap/in.pcap", "pcap file path");
+DEFINE_string(outputfile,
+"./output/output.txt", "output file path");
 DEFINE_int32(thnum,
 4, "thread num");
 DEFINE_bool(parallel,
@@ -33,7 +36,7 @@ void parsePacket(pcpp::Packet *packet, int packetNumber, int threadNum) {
 }
 
 // 主函数
-void analyzePcapFile(const std::string &filePath, bool parallel, int thnum) {
+void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std::ofstream &output) {
     pcpp::PcapFileReaderDevice reader(filePath);
     if (!reader.open()) {
         std::cerr << "无法打开PCAP文件：" << filePath << std::endl;
@@ -67,7 +70,7 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum) {
                  "tcp.window_size,tcp.checksum,tcp.urgent_pointer,tcp.payload,"
                  "udp.srcport,udp.dstport,udp.length,udp.checksum,udp.payload";
     }
-    std::cout << header << std::endl;
+    output << header << std::endl;
     if (!parallel){
         while (reader.getNextPacket(rawPacket)) {
             pcpp::Packet *parsedPacket = new pcpp::Packet(&rawPacket);
@@ -81,13 +84,13 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum) {
 
                 prevTimestamp = parser.getCurrTimeStamp();
                 prevTimeStampNSec = parser.getCurrTimeStampNSec();
-                std::cout << parser.getInfo() << std::endl;
+                output << parser.getInfo() << std::endl;
             } else {
                 Parser parser(packetNumber, copiedPacket, startTimestamp, prevTimestamp,
                               startTimeStampNSec, prevTimeStampNSec, parallel);
                 prevTimestamp = parser.getCurrTimeStamp();
                 prevTimeStampNSec = parser.getCurrTimeStampNSec();
-                std::cout << parser.getInfo() << std::endl;
+                output << parser.getInfo() << std::endl;
             }
             delete copiedPacket;
             delete parsedPacket;
@@ -110,7 +113,7 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum) {
                 }
                 for (int i = 0; i < thnum; i++){
                     if (results[i] != nullptr) {
-                        std::cout << results[i] << std::endl;
+                        output << results[i] << std::endl;
                         delete(results[i]);
                         results[i] = nullptr;
                     }
@@ -123,7 +126,7 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum) {
         }
         for (int i = 0; i < thnum; i++){
             if (results[i] != nullptr) {
-                std::cout << results[i] << std::endl;
+                output << results[i] << std::endl;
                 delete(results[i]);
                 results[i] = nullptr;
             }
@@ -134,6 +137,11 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum) {
 
 int main(int argc, char *argv[]) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
-    analyzePcapFile(FLAGS_filepath, FLAGS_parallel, FLAGS_thnum);
+    std::ofstream outputFile;
+    outputFile.open(FLAGS_outputfile);
+    if(!outputFile.is_open()){
+        std::cerr << "Output File "<< FLAGS_outputfile << "cannot be opened" << std::endl;
+    }
+    analyzePcapFile(FLAGS_filepath, FLAGS_parallel, FLAGS_thnum, outputFile);
     return 0;
 }
