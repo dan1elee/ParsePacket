@@ -72,7 +72,7 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
                  "udp.srcport,udp.dstport,udp.length,udp.checksum,udp.payload";
     }
     output << header << std::endl;
-    if (!parallel){
+    if (!parallel) {
         while (reader.getNextPacket(rawPacket)) {
             pcpp::Packet *parsedPacket = new pcpp::Packet(&rawPacket);
             pcpp::Packet *copiedPacket = new pcpp::Packet(*parsedPacket); // 复制一份就能避免PacketTrailer了？？？
@@ -112,23 +112,23 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
                 for (auto &t: threads) {
                     t.join();
                 }
-                for (int i = 0; i < thnum; i++){
+                for (int i = 0; i < thnum; i++) {
                     if (results[i] != nullptr) {
                         output << results[i] << std::endl;
-                        delete(results[i]);
+                        free(results[i]);
                         results[i] = nullptr;
                     }
                 }
                 threads.clear();
-            }  
+            }
         }
         for (auto &t: threads) {
             t.join();
         }
-        for (int i = 0; i < thnum; i++){
+        for (int i = 0; i < thnum; i++) {
             if (results[i] != nullptr) {
                 output << results[i] << std::endl;
-                delete(results[i]);
+                free(results[i]);
                 results[i] = nullptr;
             }
         }
@@ -140,8 +140,8 @@ int main(int argc, char *argv[]) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     std::ofstream outputFile;
     outputFile.open(FLAGS_outputfile);
-    if(!outputFile.is_open()){
-        std::cerr << "Output File "<< FLAGS_outputfile << "cannot be opened" << std::endl;
+    if (!outputFile.is_open()) {
+        std::cerr << "Output File " << FLAGS_outputfile << "cannot be opened" << std::endl;
     }
     analyzePcapFile(FLAGS_filepath, FLAGS_parallel, FLAGS_thnum, outputFile);
     return 0;

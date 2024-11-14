@@ -393,7 +393,7 @@ void Parser::genInfo() {
     if (isV6 && ip6_ipLayer != nullptr) {
         ss << "," << static_cast<int>(ip_version);
         ss << "," << ip_headerLen;
-        ss << "," << ip_protocol;
+        ss << "," << static_cast<int>(ip_protocol);
         ss << std::hex;
         ss << "," << "0x" << std::setw(2) << std::setfill('0') << static_cast<int>(ip6_trafficClass);
         ss << "," << "0x" << static_cast<int>(ip6_flowLabel[0])
