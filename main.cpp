@@ -26,11 +26,11 @@ char **results;
 
 void parsePacket(pcpp::Packet *packet, int packetNumber, int threadNum) {
     Parser parser(packetNumber, packet, true);
-    mtx.lock();
     int len = parser.getInfoLen();
     char *s = (char *) calloc(len + 1, sizeof(char *));
     strncpy(s, parser.getInfo().c_str(), len);
     s[len] = '\0';
+    mtx.lock();
     results[(packetNumber - 1) % threadNum] = s;
     mtx.unlock();
 }
