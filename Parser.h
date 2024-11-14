@@ -27,20 +27,20 @@ private:
 
 
     // for frame
-    time_t startTimeStamp;
-    time_t currTimeStamp;
-    time_t prevTimeStamp;
-    long startTimeStampNSec;
-    long currTimeStampNSec;
-    long prevTimeStampNSec;
-    int packetNumber;
-    std::string time_str;
-    time_t time_delta;
-    long time_deltaNSec;
-    time_t time_relative;
-    long time_relativeNSec;
-    int frameLen;
-    std::string protocols;
+    time_t startTimeStamp = 0;
+    time_t currTimeStamp = 0;
+    time_t prevTimeStamp = 0;
+    long startTimeStampNSec = 0;
+    long currTimeStampNSec = 0;
+    long prevTimeStampNSec = 0;
+    int packetNumber = 0;
+    std::string time_str = "";
+    time_t time_delta = 0;
+    long time_deltaNSec = 0;
+    time_t time_relative = 0;
+    long time_relativeNSec = 0;
+    int frameLen = 0;
+    std::string protocols = "";
 
     void parseFrame();
 
@@ -56,11 +56,11 @@ private:
 
 
     // for eth
-    pcpp::EthLayer *ethLayer;
-    pcpp::MacAddress srcMac;
-    pcpp::MacAddress dstMac;
-    uint16_t ethType;
-    size_t ethHeaderLen;
+    pcpp::EthLayer *ethLayer = nullptr;
+    pcpp::MacAddress srcMac = pcpp::MacAddress();
+    pcpp::MacAddress dstMac = pcpp::MacAddress();
+    uint16_t ethType = 0;
+    size_t ethHeaderLen = 0;
 
     void parseEth();
 
@@ -72,80 +72,80 @@ private:
 
 
     // for IP
-    bool isV6;
-    uint8_t ip_version;
-    size_t ip_headerLen;
-    uint8_t ip_protocol;
+    bool isV6 = false;
+    uint8_t ip_version = 0;
+    size_t ip_headerLen = 0;
+    uint8_t ip_protocol = 0;
 
     // for IPv4
-    pcpp::IPv4Layer *ip4_ipLayer;
-    uint8_t ip4_dsfield;
-    uint8_t ip4_dscp;
-    uint8_t ip4_ecn;
-    uint16_t ip4_len;
-    uint16_t ip4_id;
-    uint8_t ip4_ttl;
-    uint16_t ip4_flags;
-    bool ip4_flags_rb;
-    bool ip4_flags_df;
-    bool ip4_flags_mf;
-    uint16_t ip4_offset;
-    uint16_t ip4_checksum;
-    pcpp::IPv4Address ip4_srcIp;
-    pcpp::IPv4Address ip4_dstIp;
+    pcpp::IPv4Layer *ip4_ipLayer = nullptr;
+    uint8_t ip4_dsfield = 0;
+    uint8_t ip4_dscp = 0;
+    uint8_t ip4_ecn = 0;
+    uint16_t ip4_len = 0;
+    uint16_t ip4_id = 0;
+    uint8_t ip4_ttl = 0;
+    uint16_t ip4_flags = 0;
+    bool ip4_flags_rb = false;
+    bool ip4_flags_df = false;
+    bool ip4_flags_mf = false;
+    uint16_t ip4_offset = 0;
+    uint16_t ip4_checksum = 0;
+    pcpp::IPv4Address ip4_srcIp = pcpp::IPv4Address();
+    pcpp::IPv4Address ip4_dstIp = pcpp::IPv4Address();
 
     void parseIPv4();
 
 
     // for IPv6
-    pcpp::IPv6Layer *ip6_ipLayer;
-    uint8_t ip6_trafficClass;
-    uint8_t ip6_flowLabel[3];
-    uint16_t ip6_payloadLength;
-    uint8_t ip6_hopLimit;
-    pcpp::IPv6Address ip6_srcIp;
-    pcpp::IPv6Address ip6_dstIp;
+    pcpp::IPv6Layer *ip6_ipLayer = nullptr;
+    uint8_t ip6_trafficClass = 0;
+    uint8_t ip6_flowLabel[3] = {0};
+    uint16_t ip6_payloadLength = 0;
+    uint8_t ip6_hopLimit = 0;
+    pcpp::IPv6Address ip6_srcIp = pcpp::IPv6Address();
+    pcpp::IPv6Address ip6_dstIp = pcpp::IPv6Address();
 
     void parseIPv6();
 
 
     // for TCP
-    pcpp::TcpLayer *tcpLayer;
-    size_t tcp_headerLen;
-    uint16_t tcp_srcPort;
-    uint16_t tcp_dstPort;
-    uint32_t tcp_seqNum;
-    uint32_t tcp_ackNum;
-    size_t tcp_segLen;
-    uint32_t tcp_nextSeq;
-    uint16_t tcp_flags;
-    uint8_t tcp_flags_res;
-    uint8_t tcp_flags_ns;
-    uint8_t tcp_flags_cwr;
-    uint8_t tcp_flags_ecn;
-    uint8_t tcp_flags_urg;
-    uint8_t tcp_flags_ack;
-    uint8_t tcp_flags_push;
-    uint8_t tcp_flags_reset;
-    uint8_t tcp_flags_syn;
-    uint8_t tcp_flags_fin;
-    uint16_t tcp_windowSize;
-    uint16_t tcp_checksum;
-    uint16_t tcp_urgentPointer;
-    size_t tcp_dataSize;
-    uint8_t *tcp_payload;
+    pcpp::TcpLayer *tcpLayer = nullptr;
+    size_t tcp_headerLen = 0;
+    uint16_t tcp_srcPort = 0;
+    uint16_t tcp_dstPort = 0;
+    uint32_t tcp_seqNum = 0;
+    uint32_t tcp_ackNum = 0;
+    size_t tcp_segLen = 0;
+    uint32_t tcp_nextSeq = 0;
+    uint16_t tcp_flags = 0;
+    uint8_t tcp_flags_res = 0;
+    uint8_t tcp_flags_ns = 0;
+    uint8_t tcp_flags_cwr = 0;
+    uint8_t tcp_flags_ecn = 0;
+    uint8_t tcp_flags_urg = 0;
+    uint8_t tcp_flags_ack = 0;
+    uint8_t tcp_flags_push = 0;
+    uint8_t tcp_flags_reset = 0;
+    uint8_t tcp_flags_syn = 0;
+    uint8_t tcp_flags_fin = 0;
+    uint16_t tcp_windowSize = 0;
+    uint16_t tcp_checksum = 0;
+    uint16_t tcp_urgentPointer = 0;
+    size_t tcp_dataSize = 0;
+    uint8_t *tcp_payload = nullptr;
 
     void parseTCP();
 
 
     //for UDP
-    pcpp::UdpLayer *udpLayer;
-    uint16_t udp_srcPort;
-    uint16_t udp_dstPort;
-    uint16_t udp_length;
-    size_t udp_dataSize;
-    uint16_t udp_checksum;
-    uint8_t *udp_payload;
+    pcpp::UdpLayer *udpLayer = nullptr;
+    uint16_t udp_srcPort = 0;
+    uint16_t udp_dstPort = 0;
+    uint16_t udp_length = 0;
+    size_t udp_dataSize = 0;
+    uint16_t udp_checksum = 0;
+    uint8_t *udp_payload = 0;
 
     void parseUDP();
 

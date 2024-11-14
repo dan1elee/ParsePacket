@@ -3,7 +3,7 @@
 //
 
 #include "Parser.h"
-#include <stdio.h>
+#include <iostream>
 
 std::string getProtocolTypeAsString(pcpp::ProtocolType protocolType) {
     switch (protocolType) {
@@ -138,7 +138,6 @@ void Parser::parse() {
             this->parseIPv6();
             break;
         default:
-//            std::cout << "Unknown ethernet type: " << this->ethType << std::endl;
             break;
     }
     switch (this->ip_protocol) {
