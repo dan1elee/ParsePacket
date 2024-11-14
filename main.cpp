@@ -10,6 +10,8 @@
 #include <mutex>
 #include <iostream>
 #include <fstream>
+#include <fcntl.h>
+#include <unistd.h>
 #include <gflags/gflags.h>
 
 DEFINE_string(filepath,
@@ -36,7 +38,7 @@ void parsePacket(pcpp::Packet *packet, int packetNumber, int threadNum) {
 }
 
 // 主函数
-void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std::ofstream &output) {
+void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, int fd) {
     pcpp::PcapFileReaderDevice reader(filePath);
     if (!reader.open()) {
         std::cerr << "无法打开PCAP文件：" << filePath << std::endl;
@@ -70,7 +72,8 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
                  "tcp.window_size,tcp.checksum,tcp.urgent_pointer,tcp.payload,"
                  "udp.srcport,udp.dstport,udp.length,udp.checksum,udp.payload";
     }
-    output << header << std::endl;
+    write(fd,header.c_str(), header.length());
+    write(fd,"\n",1);
     if (!parallel){
         while (reader.getNextPacket(rawPacket)) {
             pcpp::Packet *parsedPacket = new pcpp::Packet(&rawPacket);
@@ -84,13 +87,23 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
 
                 prevTimestamp = parser.getCurrTimeStamp();
                 prevTimeStampNSec = parser.getCurrTimeStampNSec();
-                output << parser.getInfo() << std::endl;
+                // output << parser.getInfo() << std::endl;
+                std::string info = parser.getInfo();
+                const char *info_c = info.c_str();
+                int len = info.length();
+                write(fd,info_c, len);
+                write(fd,"\n",1);
             } else {
                 Parser parser(packetNumber, copiedPacket, startTimestamp, prevTimestamp,
                               startTimeStampNSec, prevTimeStampNSec, parallel);
                 prevTimestamp = parser.getCurrTimeStamp();
                 prevTimeStampNSec = parser.getCurrTimeStampNSec();
-                output << parser.getInfo() << std::endl;
+                // output << parser.getInfo() << std::endl;
+                 std::string info = parser.getInfo();
+                const char *info_c = info.c_str();
+                int len = info.length();
+                write(fd,info_c, len);
+                write(fd,"\n",1);
             }
             delete copiedPacket;
             delete parsedPacket;
@@ -113,7 +126,9 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
                 }
                 for (int i = 0; i < thnum; i++){
                     if (results[i] != nullptr) {
-                        output << results[i] << std::endl;
+                        // output << results[i] << std::endl;
+                        write(fd,results[i], strlen(results[i]));
+                        write(fd,"\n",1);
                         delete(results[i]);
                         results[i] = nullptr;
                     }
@@ -126,7 +141,9 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
         }
         for (int i = 0; i < thnum; i++){
             if (results[i] != nullptr) {
-                output << results[i] << std::endl;
+                // output << results[i] << std::endl;
+                write(fd,results[i], strlen(results[i]));
+                write(fd,"\n",1);
                 delete(results[i]);
                 results[i] = nullptr;
             }
@@ -137,11 +154,7 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
 
 int main(int argc, char *argv[]) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
-    std::ofstream outputFile;
-    outputFile.open(FLAGS_outputfile);
-    if(!outputFile.is_open()){
-        std::cerr << "Output File "<< FLAGS_outputfile << "cannot be opened" << std::endl;
-    }
-    analyzePcapFile(FLAGS_filepath, FLAGS_parallel, FLAGS_thnum, outputFile);
+    int fd = open(FLAGS_outputfile.c_str(), O_WRONLY|O_TRUNC|O_CREAT, 0777);  
+    analyzePcapFile(FLAGS_filepath, FLAGS_parallel, FLAGS_thnum, fd);
     return 0;
 }
