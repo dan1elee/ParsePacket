@@ -409,7 +409,7 @@ void Parser::genInfo() {
         ss << "," << ip6_srcIp.toString();
         ss << "," << ip6_dstIp.toString();
     } else {
-        ss << ",,,,,,,,,";
+        ss << ",,,,,,,";
     }
     // tcp
     if (ip_protocol == 6) {
