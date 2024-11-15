@@ -22,7 +22,6 @@ std::string getProtocolTypeAsString(pcpp::ProtocolType protocolType);
 class Parser {
 private:
     pcpp::Packet *packet;
-    bool parallel;
     std::string info = "";
 
     void parse();
@@ -31,12 +30,8 @@ private:
 
 
     // for frame
-    time_t startTimeStamp = 0;
     time_t currTimeStamp = 0;
-    time_t prevTimeStamp = 0;
-    long startTimeStampNSec = 0;
     long currTimeStampNSec = 0;
-    long prevTimeStampNSec = 0;
     int packetNumber = 0;
     std::string time_str = "";
     time_t time_delta = 0;
@@ -154,37 +149,15 @@ private:
     void parseUDP();
 
 public:
-    Parser(int packetNumber, pcpp::Packet *packet, bool parallel = false) {
+    Parser(int packetNumber, pcpp::Packet *packet) {
         this->packetNumber = packetNumber;
         this->packet = packet;
-        this->parallel = parallel;
         this->parse();
         this->genInfo();
-    }
-
-    Parser(int packetNumber, pcpp::Packet *packet, time_t startTimeStamp, time_t prevTimeStamp,
-           long startTimeStampNSec, long prevTimeStampNSec, bool parallel = false) {
-        this->packetNumber = packetNumber;
-        this->packet = packet;
-        this->startTimeStamp = startTimeStamp;
-        this->prevTimeStamp = prevTimeStamp;
-        this->startTimeStampNSec = startTimeStampNSec;
-        this->prevTimeStampNSec = prevTimeStampNSec;
-        this->parallel = parallel;
-        this->parse();
-        this->genInfo();
-    }
-
-    time_t getStartTimeStamp() {
-        return this->startTimeStamp;
     }
 
     time_t getCurrTimeStamp() {
         return this->currTimeStamp;
-    }
-
-    long getStartTimeStampNSec() {
-        return this->startTimeStampNSec;
     }
 
     long getCurrTimeStampNSec() {

@@ -157,25 +157,7 @@ void Parser::parse() {
 void Parser::parseFrame() {
     this->currTimeStamp = getFrameTimeStamp();
     this->currTimeStampNSec = getFrameTimeStampNSec();
-    if (packetNumber == 1) {
-        this->startTimeStamp = this->currTimeStamp;
-        this->startTimeStampNSec = this->currTimeStampNSec;
-        this->prevTimeStamp = this->currTimeStamp;
-        this->prevTimeStampNSec = this->currTimeStampNSec;
-    }
     this->time_str = timeStampToString(this->getFrameTimeStamp());
-    this->time_delta = this->currTimeStamp - this->prevTimeStamp;
-    this->time_deltaNSec = this->currTimeStampNSec - this->prevTimeStampNSec;
-    if (this->time_deltaNSec < (long) 0) {
-        this->time_delta -= 1;
-        this->time_deltaNSec += 1000000000;
-    }
-    this->time_relative = this->currTimeStamp - this->startTimeStamp;
-    this->time_relativeNSec = this->currTimeStampNSec - this->startTimeStampNSec;
-    if (this->time_relativeNSec < (long) 0) {
-        this->time_relative -= 1;
-        this->time_relativeNSec += 1000000000;
-    }
     this->frameLen = this->getFrameLen();
     this->protocols = this->getFrameProtocols();
 }
@@ -344,10 +326,6 @@ void Parser::genInfo() {
     // frame
     ss << time_str;
     ss << "," << currTimeStamp << "." << std::setw(9) << std::setfill('0') << currTimeStampNSec;
-    if (!parallel) {
-        ss << "," << time_delta << "." << std::setw(9) << std::setfill('0') << time_deltaNSec;
-        ss << "," << time_relative << "." << std::setw(9) << std::setfill('0') << time_relativeNSec;
-    }
     ss << std::dec;
     ss << "," << packetNumber;
     ss << "," << frameLen;

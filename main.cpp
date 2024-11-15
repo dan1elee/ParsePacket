@@ -25,7 +25,7 @@ std::mutex mtx;
 char **results;
 
 void parsePacket(pcpp::Packet *packet, int packetNumber, int threadNum) {
-    Parser parser(packetNumber, packet, true);
+    Parser parser(packetNumber, packet);
     int len = parser.getInfoLen();
     char *s = (char *) calloc(len + 1, sizeof(char *));
     strncpy(s, parser.getInfo().c_str(), len);
@@ -48,7 +48,7 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
     time_t startTimestamp = 0;
     long prevTimeStampNSec = 0;
     long startTimeStampNSec = 0;
-    std::string header = "frame.time,frame.timestamp,frame.time_delta,frame.time_relative,frame.number,frame.len,frame.protocols,"
+    std::string header = "frame.time,frame.timestamp,frame.number,frame.len,frame.protocols,"
                          "eth.dst,eth.src,eth.type,"
                          "ip.version,ip.hdr_len,ip_protocol,"
                          "ip.dsfield,ip.dsfield.dscp,ip.dsfield.ecn,ip.len,ip.id,"
@@ -59,19 +59,6 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
                          "tcp.flags.push,tcp.flags.reset,tcp.flags.syn,tcp.flags.fin,"
                          "tcp.window_size,tcp.checksum,tcp.urgent_pointer,tcp.payload,"
                          "udp.srcport,udp.dstport,udp.length,udp.checksum,udp.payload";
-    if (parallel) {
-        header = "frame.time,frame.timestamp,frame.number,frame.len,frame.protocols,"
-                 "eth.dst,eth.src,eth.type,"
-                 "ip.version,ip.hdr_len,ip_protocol,"
-                 "ip.dsfield,ip.dsfield.dscp,ip.dsfield.ecn,ip.len,ip.id,"
-                 "ip.flags,ip.flags.rb,ip.flags.df,ip.flags.mf,ip.frag_offset,ip.ttl,ip.proto,ip.checksum,ip.src,ip.dst,"
-                 "ip6.trafficclass,ip6.flowlabel,ip6.payloadlen,ip6.nextHeader,ip6.ip6_hopLimit,ip6.src,ip6.dst,"
-                 "tcp.srcport,tcp.dstport,tcp.len,tcp.seq,tcp.nxtseq,tcp.ack,tcp.hdr_len,"
-                 "tcp.flags,tcp.flags.res,tcp.flags.ns,tcp.flags.cwr,tcp.flags.ecn,tcp.flags.urg,tcp.flags.ack,"
-                 "tcp.flags.push,tcp.flags.reset,tcp.flags.syn,tcp.flags.fin,"
-                 "tcp.window_size,tcp.checksum,tcp.urgent_pointer,tcp.payload,"
-                 "udp.srcport,udp.dstport,udp.length,udp.checksum,udp.payload";
-    }
     output << header << std::endl;
     if (!parallel) {
         while (reader.getNextPacket(rawPacket)) {
@@ -79,21 +66,9 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
             pcpp::Packet *copiedPacket = new pcpp::Packet(*parsedPacket); // 复制一份就能避免PacketTrailer了？？？
 
             packetNumber++;
-            if (packetNumber == 1) {
-                Parser parser(packetNumber, copiedPacket, parallel);
-                startTimestamp = parser.getStartTimeStamp();
-                startTimeStampNSec = parser.getStartTimeStampNSec();
-
-                prevTimestamp = parser.getCurrTimeStamp();
-                prevTimeStampNSec = parser.getCurrTimeStampNSec();
-                output << parser.getInfo() << std::endl;
-            } else {
-                Parser parser(packetNumber, copiedPacket, startTimestamp, prevTimestamp,
-                              startTimeStampNSec, prevTimeStampNSec, parallel);
-                prevTimestamp = parser.getCurrTimeStamp();
-                prevTimeStampNSec = parser.getCurrTimeStampNSec();
-                output << parser.getInfo() << std::endl;
-            }
+            Parser parser(packetNumber, copiedPacket);
+            output << parser.getInfo() << std::endl;
+            
             delete copiedPacket;
             delete parsedPacket;
         }
