@@ -314,7 +314,9 @@ void Parser::parseUDP() {
     this->udp_srcPort = this->udpLayer->getSrcPort();
     this->udp_dstPort = this->udpLayer->getDstPort();
     size_t udp_headerLen = this->udpLayer->getHeaderLen();
-    this->udp_dataSize = this->udpLayer->getDataLen() - udp_headerLen;
+    size_t udp_totalLen = this->udpLayer->getDataLen();
+    this->udp_length = (uint16_t)udp_totalLen;
+    this->udp_dataSize = udp_totalLen - udp_headerLen;
     this->udp_checksum = ntohs(udpHeader->headerChecksum);
     this->udp_payload = (uint8_t *) malloc(this->udp_dataSize);
     memcpy(this->udp_payload, this->udpLayer->getData() + udp_headerLen, this->udp_dataSize);
@@ -434,6 +436,7 @@ void Parser::genInfo() {
         ss << "," << udp_srcPort;
         ss << "," << udp_dstPort;
         ss << "," << udp_length;
+        ss << "," << udp_dataSize;
         ss << std::hex;
         ss << "," << "0x" << std::setw(4) << std::setfill('0') << udp_checksum;
         ss << ",";
@@ -446,7 +449,7 @@ void Parser::genInfo() {
             }
         }
     } else {
-        ss << ",,,,,";
+        ss << ",,,,,,";
     }
     this->info = ss.str();
 }
