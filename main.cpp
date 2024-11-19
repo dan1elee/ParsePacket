@@ -66,6 +66,9 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
             pcpp::Packet *copiedPacket = new pcpp::Packet(*parsedPacket); // 复制一份就能避免PacketTrailer了？？？
 
             packetNumber++;
+            if (packetNumber % 10000 == 0) {
+                std::cout << "Parsed " << packetNumber << " packets" << std::endl;
+            }
             Parser parser(packetNumber, copiedPacket);
             output << parser.getInfo() << std::endl;
             
