@@ -120,7 +120,8 @@ int main(int argc, char *argv[]) {
     std::ofstream outputFile;
     outputFile.open(FLAGS_outputfile);
     if (!outputFile.is_open()) {
-        std::cerr << "Output File " << FLAGS_outputfile << "cannot be opened" << std::endl;
+        std::cerr << "Output File " << FLAGS_outputfile << " cannot be opened" << std::endl;
+        return 1;
     }
     analyzePcapFile(FLAGS_filepath, FLAGS_parallel, FLAGS_thnum, outputFile);
     return 0;
