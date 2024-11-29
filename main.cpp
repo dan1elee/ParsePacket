@@ -48,18 +48,6 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
     time_t startTimestamp = 0;
     long prevTimeStampNSec = 0;
     long startTimeStampNSec = 0;
-    std::string header = "frame.time,frame.timestamp,frame.number,frame.len,frame.protocols,"
-                         "eth.dst,eth.src,eth.type,"
-                         "ip.version,ip.hdr_len,ip_protocol,"
-                         "ip.dsfield,ip.dsfield.dscp,ip.dsfield.ecn,ip.len,ip.id,"
-                         "ip.flags,ip.flags.rb,ip.flags.df,ip.flags.mf,ip.frag_offset,ip.ttl,ip.proto,ip.checksum,ip.src,ip.dst,"
-                         "ip6.trafficclass,ip6.flowlabel,ip6.payloadlen,ip6.nextHeader,ip6.ip6_hopLimit,ip6.src,ip6.dst,"
-                         "tcp.srcport,tcp.dstport,tcp.len,tcp.seq,tcp.nxtseq,tcp.ack,tcp.hdr_len,"
-                         "tcp.flags,tcp.flags.res,tcp.flags.ns,tcp.flags.cwr,tcp.flags.ecn,tcp.flags.urg,tcp.flags.ack,"
-                         "tcp.flags.push,tcp.flags.reset,tcp.flags.syn,tcp.flags.fin,"
-                         "tcp.window_size,tcp.checksum,tcp.urgent_pointer,tcp.payload,"
-                         "udp.srcport,udp.dstport,udp.length,udp.data_len,udp.checksum,udp.payload";
-    output << header << std::endl;
     if (!parallel) {
         while (reader.getNextPacket(rawPacket)) {
             pcpp::Packet *parsedPacket = new pcpp::Packet(&rawPacket);
