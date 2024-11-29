@@ -19,7 +19,7 @@ DEFINE_string(outputfile,
 DEFINE_int32(thnum,
 4, "thread num");
 DEFINE_int32(chunksize,
-1000, 'chunk_size');
+1000, "chunk size");
 DEFINE_bool(parallel,
 false, "parallel");
 
