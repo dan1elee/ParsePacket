@@ -81,6 +81,10 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
             delete copiedPacket;
             delete parsedPacket;
         }
+        if (ss.tellp() != std::streampos(0)) {
+            output << ss.rdbuf();
+            ss.str(std::string());
+        }
     } else {
         results = (char **) calloc(thnum, sizeof(char *));
         std::vector <std::thread> threads;
