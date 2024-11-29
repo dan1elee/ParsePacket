@@ -45,10 +45,10 @@ def pairs_gen(in_path: str):
         sp = line.split(',')
         ip_v = sp[8]
         if ip_v == "4":
-            k = key_f(sp[24], sp[25], 4)
+            k = key_f(sp[9], sp[10], 4)
             ip_pool.add(k)
         elif ip_v == "6":
-            k = key_f(sp[31], sp[32], 6)
+            k = key_f(sp[11], sp[12], 6)
             ip6_pool.add(k)
         line = f.readline()
     f.close()

@@ -140,16 +140,6 @@ void Parser::parse() {
         default:
             break;
     }
-    switch (this->ip_protocol) {
-        case 6:
-            this->parseTCP();
-            break;
-        case 17:
-            this->parseUDP();
-            break;
-        default:
-            break;
-    }
 }
 
 
@@ -232,20 +222,6 @@ void Parser::parseIPv4() {
     }
     pcpp::iphdr *ip4_ipHeader = ip4_ipLayer->getIPv4Header();
     this->ip_version = ip4_ipHeader->ipVersion;
-    this->ip_headerLen = this->ip4_ipLayer->getHeaderLen();
-    this->ip4_dsfield = ip4_ipHeader->typeOfService;
-    this->ip4_dscp = this->ip4_dsfield >> 2;
-    this->ip4_ecn = this->ip4_dsfield & 0x3;
-    this->ip4_len = ntohs(ip4_ipHeader->totalLength);
-    this->ip4_id = ntohs(ip4_ipHeader->ipId);
-    this->ip4_ttl = ip4_ipHeader->timeToLive;
-    this->ip4_flags = ntohs(ip4_ipHeader->fragmentOffset);
-    this->ip4_flags_rb = (this->ip4_flags >> 15);
-    this->ip4_flags_df = (this->ip4_flags >> 14) & 1;
-    this->ip4_flags_mf = (this->ip4_flags >> 13) & 1;
-    this->ip4_offset = this->ip4_flags & 0x1FFF;
-    this->ip_protocol = ip4_ipHeader->protocol;
-    this->ip4_checksum = ntohs(ip4_ipHeader->headerChecksum);
     this->ip4_srcIp = this->ip4_ipLayer->getSrcIPv4Address();
     this->ip4_dstIp = this->ip4_ipLayer->getDstIPv4Address();
 }
@@ -259,67 +235,8 @@ void Parser::parseIPv6() {
     }
     pcpp::ip6_hdr *ip6_ipHeader = this->ip6_ipLayer->getIPv6Header();
     this->ip_version = ip6_ipHeader->ipVersion;
-    this->ip_headerLen = this->ip6_ipLayer->getHeaderLen();
-    this->ip6_trafficClass = ip6_ipHeader->trafficClass;
-    memcpy(this->ip6_flowLabel, ip6_ipHeader->flowLabel, 3 * sizeof(uint8_t));
-    this->ip6_payloadLength = ntohs(ip6_ipHeader->payloadLength);
-    this->ip_protocol = ip6_ipHeader->nextHeader;
-    this->ip6_hopLimit = ip6_ipHeader->hopLimit;
     this->ip6_srcIp = this->ip6_ipLayer->getSrcIPv6Address();
     this->ip6_dstIp = this->ip6_ipLayer->getDstIPv6Address();
-}
-
-
-// for TCP
-void Parser::parseTCP() {
-    this->tcpLayer = packet->getLayerOfType<pcpp::TcpLayer>();
-    if (this->tcpLayer == nullptr) {
-        return;
-    }
-    pcpp::tcphdr *tcpHeader = tcpLayer->getTcpHeader();
-    this->tcp_headerLen = tcpLayer->getHeaderLen();
-    this->tcp_srcPort = this->tcpLayer->getSrcPort();
-    this->tcp_dstPort = this->tcpLayer->getDstPort();
-    this->tcp_seqNum = ntohl(tcpHeader->sequenceNumber);
-    this->tcp_ackNum = ntohl(tcpHeader->ackNumber);
-    this->tcp_segLen = this->tcpLayer->getDataLen() - this->tcp_headerLen;
-    this->tcp_nextSeq = this->tcp_seqNum + this->tcp_segLen;
-    uint8_t *data = this->tcpLayer->getData();
-    this->tcp_flags = ((uint16_t)((data[12] & 0xF) << 8)) | ((uint16_t) data[13]);
-    this->tcp_flags_res = (this->tcp_flags >> 9);
-    this->tcp_flags_ns = (this->tcp_flags >> 8) & 1;
-    this->tcp_flags_cwr = (this->tcp_flags >> 7) & 1;
-    this->tcp_flags_ecn = (this->tcp_flags >> 6) & 1;
-    this->tcp_flags_urg = (this->tcp_flags >> 5) & 1;
-    this->tcp_flags_ack = (this->tcp_flags >> 4) & 1;
-    this->tcp_flags_push = (this->tcp_flags >> 3) & 1;
-    this->tcp_flags_reset = (this->tcp_flags >> 2) & 1;
-    this->tcp_flags_syn = (this->tcp_flags >> 1) & 1;
-    this->tcp_flags_fin = this->tcp_flags & 1;
-    this->tcp_windowSize = ntohs(tcpHeader->windowSize);
-    this->tcp_checksum = ntohs(tcpHeader->headerChecksum);
-    this->tcp_urgentPointer = ntohs(tcpHeader->urgentPointer);
-    this->tcp_dataSize = this->tcpLayer->getDataLen() - this->tcp_headerLen;
-    this->tcp_payload = (uint8_t *) malloc(this->tcp_dataSize);
-    memcpy(this->tcp_payload, this->tcpLayer->getData() + this->tcp_headerLen, this->tcp_dataSize);
-
-}
-
-void Parser::parseUDP() {
-    this->udpLayer = packet->getLayerOfType<pcpp::UdpLayer>();
-    if (this->udpLayer == nullptr) {
-        return;
-    }
-    pcpp::udphdr *udpHeader = this->udpLayer->getUdpHeader();
-    this->udp_srcPort = this->udpLayer->getSrcPort();
-    this->udp_dstPort = this->udpLayer->getDstPort();
-    size_t udp_headerLen = this->udpLayer->getHeaderLen();
-    size_t udp_totalLen = this->udpLayer->getDataLen();
-    this->udp_length = (uint16_t)udp_totalLen;
-    this->udp_dataSize = udp_totalLen - udp_headerLen;
-    this->udp_checksum = ntohs(udpHeader->headerChecksum);
-    this->udp_payload = (uint8_t *) malloc(this->udp_dataSize);
-    memcpy(this->udp_payload, this->udpLayer->getData() + udp_headerLen, this->udp_dataSize);
 }
 
 void Parser::genInfo() {
@@ -345,111 +262,23 @@ void Parser::genInfo() {
     if ((!isV6 && ip4_ipLayer != nullptr) || (isV6 && ip6_ipLayer != nullptr)) {
         ss << std::dec;
         ss << "," << static_cast<int>(ip_version);
-        ss << "," << ip_headerLen;
-        ss << "," << static_cast<int>(ip_protocol);;
     } else {
-        ss << ",,,";
+        ss << ",";
     }
 
     //ipv4
     if (!isV6 && ip4_ipLayer != nullptr) {
-        ss << std::hex;
-        ss << "," << "0x" << static_cast<int>(ip4_dsfield);
-        ss << std::dec;
-        ss << "," << static_cast<int>(ip4_dscp);
-        ss << "," << static_cast<int>(ip4_ecn);
-        ss << "," << ip4_len;
-        ss << std::hex;
-        ss << "," << "0x" << std::setw(4) << std::setfill('0') << ip4_id;
-        ss << "," << "0x" << std::setw(4) << std::setfill('0') << ip4_flags;
-        ss << std::dec;
-        ss << "," << ip4_flags_rb;
-        ss << "," << ip4_flags_df;
-        ss << "," << ip4_flags_mf;
-        ss << "," << ip4_offset;
-        ss << "," << static_cast<int>(ip4_ttl);
-        ss << "," << static_cast<int>(ip_protocol);
-        ss << "," << ip4_checksum;
         ss << "," << ip4_srcIp.toString();
         ss << "," << ip4_dstIp.toString();
     } else {
-        ss << ",,,,,,,,,,,,,,,";
+        ss << ",,";
     }
     //ipv6
     if (isV6 && ip6_ipLayer != nullptr) {
-        ss << std::hex;
-        ss << "," << "0x" << std::setw(2) << std::setfill('0') << static_cast<int>(ip6_trafficClass);
-        ss << "," << "0x" << static_cast<int>(ip6_flowLabel[0])
-           << std::setw(2) << std::setfill('0') << static_cast<int>(ip6_flowLabel[1])
-           << std::setw(2) << std::setfill('0') << static_cast<int>(ip6_flowLabel[2]);
-        ss << std::dec;
-        ss << "," << ip6_payloadLength;
-        ss << "," << static_cast<int>(ip_protocol);
-        ss << "," << static_cast<int>(ip6_hopLimit);
         ss << "," << ip6_srcIp.toString();
         ss << "," << ip6_dstIp.toString();
     } else {
-        ss << ",,,,,,,";
-    }
-    // tcp
-    if (ip_protocol == 6) {
-        ss << std::dec;
-        ss << "," << tcp_srcPort;
-        ss << "," << tcp_dstPort;
-        ss << "," << tcp_segLen;
-        ss << "," << tcp_seqNum;
-        ss << "," << tcp_nextSeq;
-        ss << "," << tcp_ackNum;
-        ss << "," << tcp_headerLen;
-        ss << std::hex;
-        ss << "," << "0x" << std::setw(3) << std::setfill('0') << tcp_flags;
-        ss << std::dec;
-        ss << "," << static_cast<int>(tcp_flags_res);
-        ss << "," << static_cast<int>(tcp_flags_ns);
-        ss << "," << static_cast<int>(tcp_flags_cwr);
-        ss << "," << static_cast<int>(tcp_flags_ecn);
-        ss << "," << static_cast<int>(tcp_flags_urg);
-        ss << "," << static_cast<int>(tcp_flags_ack);
-        ss << "," << static_cast<int>(tcp_flags_push);
-        ss << "," << static_cast<int>(tcp_flags_reset);
-        ss << "," << static_cast<int>(tcp_flags_syn);
-        ss << "," << static_cast<int>(tcp_flags_fin);
-        ss << "," << tcp_windowSize;
-        ss << std::hex;
-        ss << "," << "0x" << std::setw(4) << std::setfill('0') << tcp_checksum;
-        ss << std::dec;
-        ss << "," << tcp_urgentPointer;
-        ss << ",";
-        if (tcp_dataSize > 0) {
-            ss << std::hex;
-            for (int i = 0; i < tcp_dataSize; i++) {
-                if (i != 0)
-                    ss << ":";
-                ss << std::setw(2) << std::setfill('0') << static_cast<int>(tcp_payload[i]);
-            }
-        }
-    } else {
-        ss << ",,,,,,,,,,,,,,,,,,,,,,";
-    }
-    if (ip_protocol == 17) {
-        ss << std::dec;
-        ss << "," << udp_srcPort;
-        ss << "," << udp_dstPort;
-        ss << "," << udp_length;
-        ss << "," << udp_dataSize;
-        ss << std::hex;
-        ss << "," << "0x" << std::setw(4) << std::setfill('0') << udp_checksum;
-        ss << ",";
-        if (udp_dataSize > 0) {
-            ss << std::hex;
-            for (int i = 0; i < udp_dataSize; i++) {
-                if (i != 0)
-                    ss << ":";
-                ss << std::setw(2) << std::setfill('0') << static_cast<int>(udp_payload[i]);
-            }
-        }
-    } else {
-        ss << ",,,,,,";
+        ss << ",,";
     }
     this->info = ss.str();
 }
