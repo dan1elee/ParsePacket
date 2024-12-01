@@ -25,7 +25,7 @@ private:
     std::string info = "";
 
     void parse();
-    
+
     void genInfo();
 
 
