@@ -315,7 +315,7 @@ void Parser::parseUDP() {
     this->udp_dstPort = this->udpLayer->getDstPort();
     size_t udp_headerLen = this->udpLayer->getHeaderLen();
     size_t udp_totalLen = this->udpLayer->getDataLen();
-    this->udp_length = (uint16_t)udp_totalLen;
+    this->udp_length = (uint16_t) udp_totalLen;
     this->udp_dataSize = udp_totalLen - udp_headerLen;
     this->udp_checksum = ntohs(udpHeader->headerChecksum);
     this->udp_payload = (uint8_t *) malloc(this->udp_dataSize);
