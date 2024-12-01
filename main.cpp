@@ -1,8 +1,11 @@
 #include "PcapFileDevice.h"
 #include "Packet.h"
 #include "Logger.h"
+#include "TcpReassembly.h"
+#include "IpAddress.h"
 
 #include "Parser.h"
+#include "flow.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -39,7 +42,7 @@ void parsePacket(pcpp::Packet *packet, int packetNumber, int threadNum) {
 }
 
 // 主函数
-void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std::ofstream &output) {
+void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std::ofstream &output, pcpp::TcpReassembly &tcpReassembly) {
     pcpp::PcapFileReaderDevice reader(filePath);
     if (!reader.open()) {
         std::cerr << "无法打开PCAP文件：" << filePath << std::endl;
@@ -79,6 +82,9 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
                 output << ss.rdbuf();
                 ss.str(std::string());
             }
+
+            tcpReassembly.reassemblePacket(*copiedPacket);
+
             delete copiedPacket;
             delete parsedPacket;
         }
@@ -86,6 +92,9 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
             output << ss.rdbuf();
             ss.str(std::string());
         }
+
+        tcpReassembly.closeAllConnections();
+
     } else {
         results = (char **) calloc(thnum, sizeof(char *));
         std::vector <std::thread> threads;
@@ -135,7 +144,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     pcpp::Logger::getInstance().enableLogs();
-    pcpp::Logger::getInstance().setAllModulesToLogLevel(pcpp::Logger::LogLevel::Debug);
-    analyzePcapFile(FLAGS_filepath, FLAGS_parallel, FLAGS_thnum, outputFile);
+    pcpp::Logger::getInstance().setAllModulesToLogLevel(pcpp::Logger::LogLevel::Info);
+
+    TcpReassemblyConnMgr connMgr;
+	pcpp::TcpReassembly tcpReassembly(tcpReassemblyMsgReadyCallback, &connMgr, tcpReassemblyConnectionStartCallback,
+	                                  tcpReassemblyConnectionEndCallback);
+
+    analyzePcapFile(FLAGS_filepath, FLAGS_parallel, FLAGS_thnum, outputFile, tcpReassembly);
     return 0;
 }
