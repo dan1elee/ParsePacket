@@ -18,6 +18,8 @@ DEFINE_string(outputfile,
 "./output/output.txt", "output file path");
 DEFINE_int32(thnum,
 4, "thread num");
+DEFINE_int32(chunksize,
+1000, "chunk size");
 DEFINE_bool(parallel,
 false, "parallel");
 
@@ -61,6 +63,7 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
                          "udp.srcport,udp.dstport,udp.length,udp.data_len,udp.checksum,udp.payload";
     output << header << std::endl;
     if (!parallel) {
+        std::stringstream ss;
         while (reader.getNextPacket(rawPacket)) {
             pcpp::Packet *parsedPacket = new pcpp::Packet(&rawPacket);
             pcpp::Packet *copiedPacket = new pcpp::Packet(*parsedPacket); // 复制一份就能避免PacketTrailer了？？？
@@ -70,10 +73,17 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
                 std::cout << "Parsed " << packetNumber << " packets" << std::endl;
             }
             Parser parser(packetNumber, copiedPacket);
-            output << parser.getInfo() << std::endl;
-            
+            ss << parser.getInfo() << std::endl;
+            if (packetNumber % FLAGS_chunksize == 0) {
+                output << ss.rdbuf();
+                ss.str(std::string());
+            }
             delete copiedPacket;
             delete parsedPacket;
+        }
+        if (ss.tellp() != std::streampos(0)) {
+            output << ss.rdbuf();
+            ss.str(std::string());
         }
     } else {
         results = (char **) calloc(thnum, sizeof(char *));
