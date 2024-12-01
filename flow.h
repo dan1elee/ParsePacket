@@ -3,9 +3,11 @@
 
 #include <unordered_map>
 #include <iostream>
+#include <vector>
 #include "TcpReassembly.h"
 #include "IpAddress.h"
 
+extern int packetNumber;
 
 struct TcpReassemblyData;
 
@@ -22,6 +24,7 @@ struct TcpReassemblyData {
     int bytesFromSide[2];
     pcpp::IPAddress ip[2];
     uint16_t port[2];
+    std::vector<int> packetNumbers;
 
     TcpReassemblyData() {
         clear();
@@ -61,6 +64,7 @@ tcpReassemblyMsgReadyCallback(const int8_t sideIndex, const pcpp::TcpStreamData 
     // count number of packets and bytes in each side of the connection
     flow->second.numOfDataPackets[sideIndex]++;
     flow->second.bytesFromSide[sideIndex] += (int) tcpData.getDataLength();
+    flow->second.packetNumbers.push_back(packetNumber);
 }
 
 static void tcpReassemblyConnectionStartCallback(const pcpp::ConnectionData &connectionData, void *userCookie) {
@@ -102,7 +106,12 @@ static void tcpReassemblyConnectionEndCallback(const pcpp::ConnectionData &conne
               << std::endl;
     std::cout << "Number of messages in side 1:      " << connection->second.numOfMessagesFromSide[1]
               << std::endl;
-
+    std::cout << "Frame numbers: ";
+    auto numbers = connection->second.packetNumbers;
+    for (int i=0;i<numbers.size();i++){
+        std::cout << numbers[i] << ",";
+    }
+    std::cout << std::endl;
     std::cout << std::endl;
 
     connMgr->erase(connection);

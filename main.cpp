@@ -29,7 +29,7 @@ false, "parallel");
 
 std::mutex mtx;
 char **results;
-
+int packetNumber = 0;
 void parsePacket(pcpp::Packet *packet, int packetNumber, int threadNum) {
     Parser parser(packetNumber, packet);
     int len = parser.getInfoLen();
@@ -42,7 +42,7 @@ void parsePacket(pcpp::Packet *packet, int packetNumber, int threadNum) {
 }
 
 // 主函数
-void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std::ofstream &output,
+void analyzePcapFile(const  std::string &filePath, bool parallel, int thnum, std::ofstream &output,
                      pcpp::TcpReassembly &tcpReassembly) {
     pcpp::PcapFileReaderDevice reader(filePath);
     if (!reader.open()) {
@@ -50,7 +50,6 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
         return;
     }
     pcpp::RawPacket rawPacket;
-    int packetNumber = 0;
     time_t prevTimestamp = 0;
     time_t startTimestamp = 0;
     long prevTimeStampNSec = 0;
@@ -103,8 +102,9 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
             pcpp::Packet *parsedPacket = new pcpp::Packet(&rawPacket);
             packetNumber++;
             pcpp::Packet *copiedPacket = new pcpp::Packet(*parsedPacket);
-            threads.push_back(std::thread([copiedPacket, packetNumber, thnum]() {
-                parsePacket(copiedPacket, packetNumber, thnum);
+            int number = packetNumber;
+            threads.push_back(std::thread([copiedPacket, number, thnum]() {
+                parsePacket(copiedPacket, number, thnum);
                 delete copiedPacket;
             }));
             delete parsedPacket;
