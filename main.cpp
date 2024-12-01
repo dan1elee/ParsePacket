@@ -42,7 +42,8 @@ void parsePacket(pcpp::Packet *packet, int packetNumber, int threadNum) {
 }
 
 // 主函数
-void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std::ofstream &output, pcpp::TcpReassembly &tcpReassembly) {
+void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std::ofstream &output,
+                     pcpp::TcpReassembly &tcpReassembly) {
     pcpp::PcapFileReaderDevice reader(filePath);
     if (!reader.open()) {
         std::cerr << "无法打开PCAP文件：" << filePath << std::endl;
@@ -147,8 +148,8 @@ int main(int argc, char *argv[]) {
     pcpp::Logger::getInstance().setAllModulesToLogLevel(pcpp::Logger::LogLevel::Info);
 
     TcpReassemblyConnMgr connMgr;
-	pcpp::TcpReassembly tcpReassembly(tcpReassemblyMsgReadyCallback, &connMgr, tcpReassemblyConnectionStartCallback,
-	                                  tcpReassemblyConnectionEndCallback);
+    pcpp::TcpReassembly tcpReassembly(tcpReassemblyMsgReadyCallback, &connMgr, tcpReassemblyConnectionStartCallback,
+                                      tcpReassemblyConnectionEndCallback);
 
     analyzePcapFile(FLAGS_filepath, FLAGS_parallel, FLAGS_thnum, outputFile, tcpReassembly);
     return 0;
