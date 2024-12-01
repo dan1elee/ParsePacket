@@ -1,5 +1,6 @@
 #include "PcapFileDevice.h"
 #include "Packet.h"
+#include "Logger.h"
 
 #include "Parser.h"
 
@@ -133,6 +134,8 @@ int main(int argc, char *argv[]) {
         std::cerr << "Output File " << FLAGS_outputfile << " cannot be opened" << std::endl;
         return 1;
     }
+    pcpp::Logger::getInstance().enableLogs();
+    pcpp::Logger::getInstance().setAllModulesToLogLevel(pcpp::Logger::LogLevel::Debug);
     analyzePcapFile(FLAGS_filepath, FLAGS_parallel, FLAGS_thnum, outputFile);
     return 0;
 }
