@@ -21,6 +21,8 @@ DEFINE_int32(thnum,
 4, "thread num");
 DEFINE_int32(chunksize,
 1000, "chunk size");
+DEFINE_int32(startnum,
+0, "packet start frame number");
 DEFINE_bool(parallel,
 false, "parallel");
 
@@ -46,7 +48,7 @@ void analyzePcapFile(const std::string &filePath, bool parallel, int thnum, std:
         return;
     }
     pcpp::RawPacket rawPacket;
-    int packetNumber = 0;
+    int packetNumber = FLAGS_startnum;
     time_t prevTimestamp = 0;
     time_t startTimestamp = 0;
     long prevTimeStampNSec = 0;
